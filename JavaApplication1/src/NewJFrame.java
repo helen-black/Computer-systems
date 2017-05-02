@@ -8,6 +8,15 @@
  *
  * @author helen
  */
+import MainLogic.MainLogic;
+import java.awt.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.table.TableModel;
 public class NewJFrame extends javax.swing.JFrame {
 
     /**
@@ -16,7 +25,87 @@ public class NewJFrame extends javax.swing.JFrame {
     public NewJFrame() {
         initComponents();
     }
+    
+    private ArrayList<Integer> makeStrInteger(String numProc) {
+        ArrayList<Integer> arr = new ArrayList();
+        if (!numProc.isEmpty()) {
+            String[] strings = numProc.split(" ");
+            for (String string : strings) 
+                arr.add(Integer.parseInt(string));
+        }
+        return arr;
+    }
+    
+    private Processor getMostPowerfulFree(ArrayList<Processor> procs, Task task) {
+        Processor res = new Processor();
+        for(Processor proc: procs)
+            if(!proc.isBusy() && proc.getPower() > res.getPower() &&
+                    task.isProcValid(proc))
+                res = proc;
+        return res;        
+    }
+    
+    private void runApplication(java.awt.event.ActionEvent evt) {
+        int tasksAdded = 0;
+        ArrayList<Task> tasks = new ArrayList();
+        ArrayList<Processor> procs = new ArrayList();
+        procs.add(new Processor(Integer.parseInt(jLabel11.getText()), 1));
+        procs.add(new Processor(Integer.parseInt(jLabel14.getText()), 2));
+        procs.add(new Processor(Integer.parseInt(jLabel13.getText()), 3));
+        procs.add(new Processor(Integer.parseInt(jLabel15.getText()), 4));
+        procs.add(new Processor(Integer.parseInt(jLabel16.getText()), 5));
+                
+        TableModel model = tabTasks.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            try {
+                int num = (int)model.getValueAt(i, 0);
+                ArrayList<Integer> arr = makeStrInteger((String)model.getValueAt(i, 1));
+                double posibility = (double)model.getValueAt(i, 2);
+                int complexity = (int)model.getValueAt(i, 3);
 
+                tasks.add(new Task(complexity, posibility, arr));
+            }
+            catch(NullPointerException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        
+        //tasks.add(e);
+        final int iterations = 10000;
+        int iteration = 0;
+        LinkedList<Task> queue = new LinkedList();
+        
+        for(iteration = 0; iteration < iterations; iteration++) {
+            
+            for(Task task: tasks) {      //add new tasks to queue every 1 ms
+                if (task.isAllowed()) {
+                    tasksAdded+=task.getComplexity();
+                    queue.addLast(task);
+                }
+            }
+            
+            if (!queue.isEmpty()) {
+                Task task = queue.getFirst();
+            
+                Processor proc = getMostPowerfulFree(procs, task);
+                if(!proc.isBusy()) {         //add next task to completing
+                    proc.setLeftToCalc(task.getComplexity());
+                    queue.removeFirst();
+                }
+            }
+            for (Processor currProc: procs) {
+                currProc.makeCalculation();
+            }
+        }
+        txtEfficiencyProc1.setText(Integer.toString(procs.get(0).getGeneralCompleted()));
+        txtEfficiencyProc2.setText(Integer.toString(procs.get(1).getGeneralCompleted()));
+        txtEfficiencyProc3.setText(Integer.toString(procs.get(2).getGeneralCompleted()));
+        txtEfficiencyProc4.setText(Integer.toString(procs.get(3).getGeneralCompleted()));
+        txtEfficiencyProc5.setText(Integer.toString(procs.get(4).getGeneralCompleted()));
+        
+        
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -77,8 +166,18 @@ public class NewJFrame extends javax.swing.JFrame {
         });
 
         btnStart.setText("Start");
+        btnStart.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnStartActionPerformed(evt);
+            }
+        });
 
         btnStop.setText("Stop");
+        btnStop.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnStopActionPerformed(evt);
+            }
+        });
 
         tabTasks.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -109,18 +208,11 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.String.class, java.lang.Double.class, java.lang.Double.class
-            };
-            boolean[] canEdit = new boolean [] {
-                false, false, true, true
+                java.lang.Integer.class, java.lang.String.class, java.lang.Double.class, java.lang.Integer.class
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
-            }
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
             }
         });
         scrollTasksTable.setViewportView(tabTasks);
@@ -145,19 +237,17 @@ public class NewJFrame extends javax.swing.JFrame {
         sliderProc5.setValue(10);
 
         jTextField1.setEditable(false);
-        jTextField1.setText("jTextField1");
+        jTextField1.setText("0");
 
         jLabel1.setText("Кількість операцій за 10 с");
 
         jLabel2.setText("ККД");
 
         jTextField2.setEditable(false);
-        jTextField2.setText("jTextField1");
 
         jLabel3.setText("ККД'");
 
         jTextField3.setEditable(false);
-        jTextField3.setText("jTextField1");
 
         jLabel4.setText("Кількість операцій за 10 с");
 
@@ -210,8 +300,6 @@ public class NewJFrame extends javax.swing.JFrame {
         binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, sliderProc4, org.jdesktop.beansbinding.ELProperty.create("${value}"), jLabel15, org.jdesktop.beansbinding.BeanProperty.create("text"));
         bindingGroup.addBinding(binding);
 
-        jLabel16.setText("10");
-
         binding = org.jdesktop.beansbinding.Bindings.createAutoBinding(org.jdesktop.beansbinding.AutoBinding.UpdateStrategy.READ_WRITE, sliderProc5, org.jdesktop.beansbinding.ELProperty.create("${value}"), jLabel16, org.jdesktop.beansbinding.BeanProperty.create("text"));
         bindingGroup.addBinding(binding);
 
@@ -223,26 +311,13 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(21, 21, 21)
-                                .addComponent(jLabel1)
-                                .addGap(126, 126, 126)
-                                .addComponent(jLabel2))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(55, 55, 55)
-                                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(124, 124, 124)))
+                        .addGap(21, 21, 21)
+                        .addComponent(jLabel1)
+                        .addGap(126, 126, 126)
+                        .addComponent(jLabel2)
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(66, 66, 66))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(jLabel3)
-                                .addGap(82, 82, 82))))
+                        .addComponent(jLabel3)
+                        .addGap(147, 147, 147))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
@@ -291,11 +366,22 @@ public class NewJFrame extends javax.swing.JFrame {
                                     .addComponent(txtEfficiencyProc3, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE)
                                     .addComponent(txtEfficiencyProc4)
                                     .addComponent(txtEfficiencyProc5))
-                                .addGap(0, 54, Short.MAX_VALUE))
+                                .addGap(0, 0, Short.MAX_VALUE))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addComponent(jLabel5)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jLabel4)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(jLabel5)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGap(55, 55, 55)
+                                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addGap(54, 54, 54)
+                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(96, 96, 96)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel4))))
                         .addContainerGap())))
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
@@ -350,7 +436,6 @@ public class NewJFrame extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(sliderProc4, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addComponent(txtEfficiencyProc4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel10)
                             .addComponent(jLabel16))
@@ -358,10 +443,11 @@ public class NewJFrame extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(sliderProc5, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(txtEfficiencyProc5, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 76, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 82, Short.MAX_VALUE)
                         .addComponent(jLabel3)
-                        .addGap(10, 10, 10)
-                        .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(4, 4, 4))
                     .addGroup(layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -370,8 +456,9 @@ public class NewJFrame extends javax.swing.JFrame {
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(jLabel1)
                                     .addComponent(jLabel2))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(6, 6, 6))))
                     .addGroup(layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(scrollTasksTable, javax.swing.GroupLayout.PREFERRED_SIZE, 366, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -411,6 +498,15 @@ public class NewJFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtEfficiencyProc1ActionPerformed
 
+    private void btnStartActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStartActionPerformed
+        isAction = true;
+        runApplication(evt);
+    }//GEN-LAST:event_btnStartActionPerformed
+
+    private void btnStopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStopActionPerformed
+        isAction = false;
+    }//GEN-LAST:event_btnStopActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -445,7 +541,8 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         });
     }
-
+    
+    boolean isAction;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> boxAlgNum;
     private javax.swing.JButton btnStart;
