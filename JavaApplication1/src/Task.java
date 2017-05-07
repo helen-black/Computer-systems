@@ -18,6 +18,13 @@ public class Task {
     private ArrayList<Integer> processors;
     private Random r;
     
+    public Task() {
+        complexity = 0;
+        probability = 0;
+        r = new Random();
+        processors = new ArrayList<Integer>();
+    }
+    
     public Task(int compl, double probability, ArrayList<Integer>procs) {
         this.complexity = compl;
         this.probability = probability;
@@ -31,6 +38,10 @@ public class Task {
     
     public int getComplexity() {
         return complexity;
+    }
+    
+    public ArrayList<Integer> getProcessorsId() {
+        return processors;
     }
     
     public boolean isAllowed() {
